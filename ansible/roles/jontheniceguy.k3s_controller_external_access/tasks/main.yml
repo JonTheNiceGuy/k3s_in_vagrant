@@ -1,0 +1,5 @@
+- name: Get k3s configuration
+  become: true
+  ansible.builtin.shell: "cat /etc/rancher/k3s/k3s.yaml | sed -E 's~: default~: vagrant_k3s~;s~https://127.0.0.1:6443~https://{{ ansible_eth1.ipv4.address }}:6443~' > /vagrant/kubeconfig"
+  register: _k3s_configuration
+  changed_when: false

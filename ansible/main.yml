@@ -1,0 +1,57 @@
+- name: Setup SSH
+  hosts: controller
+  gather_facts: false
+  tasks:
+    - name: Setup ssh directory
+      ansible.builtin.file:
+        path: "{{ lookup('ansible.builtin.env', 'HOME') }}/.ssh"
+        state: directory
+        owner: "{{ lookup('ansible.builtin.env', 'USER') }}"
+        group: "{{ lookup('ansible.builtin.env', 'USER') }}"
+        mode: "0700"
+    - name: Setup ssh config
+      ansible.builtin.copy:
+        dest: "{{ lookup('ansible.builtin.env', 'HOME') }}/.ssh/config"
+        owner: "{{ lookup('ansible.builtin.env', 'USER') }}"
+        group: "{{ lookup('ansible.builtin.env', 'USER') }}"
+        mode: "0600"
+        content: |
+          {%- for member in groups["workers"] -%}
+          {%- set this_host = hostvars[member] -%}
+          Host {{ this_host["ansible_host"] }}
+            StrictHostKeyChecking no
+            UserKnownHostsFile=/dev/null
+          {% endfor %}
+
+- name: Set the hostname
+  hosts: all
+  become: true
+  tasks:
+    - name: Set hostname
+      when: inventory_hostname is not in ansible_fqdn
+      ansible.builtin.command: "hostnamectl set-hostname {{ inventory_hostname }}.{{ dns_suffix | default('k3s.demo') }}"
+      register: _set_hostname
+      changed_when: _set_hostname.rc == 0
+
+- name: Install k3s controller
+  hosts: controller
+  gather_facts: false
+  tasks:
+    - name: Load k3s controller
+      ansible.builtin.include_role:
+        name: jontheniceguy.k3s_controller_install
+
+- name: Get install token
+  hosts: workers
+  gather_facts: false
+  tasks:
+    - name: Load k3s worker
+      ansible.builtin.include_role:
+        name: jontheniceguy.k3s_worker_install
+
+- name: Read the controller cluster file
+  hosts: controller
+  tasks:
+    - name: Load k3s controller
+      ansible.builtin.include_role:
+        name: jontheniceguy.k3s_controller_external_access

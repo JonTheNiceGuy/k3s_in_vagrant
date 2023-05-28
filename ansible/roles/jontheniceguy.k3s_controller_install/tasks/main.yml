@@ -1,0 +1,12 @@
+- name: Install k3s server
+  ansible.builtin.shell: "set -e -o pipefail && wget -qO - https://get.k3s.io | sh -"
+  args:
+    warn: false
+    creates: /etc/rancher/k3s/k3s.yaml
+    executable: /bin/bash
+  register: _install_k3s_server
+
+- name: Show output
+  when: debug_output and _install_k3s_server.changed
+  ansible.builtin.debug:
+    var: _install_k3s_server.stdout_lines

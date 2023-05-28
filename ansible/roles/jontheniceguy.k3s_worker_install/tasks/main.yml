@@ -1,0 +1,19 @@
+- name: Get token
+  delegate_to: "{{ controller_node }}"
+  become: true
+  ansible.builtin.command: "cat /var/lib/rancher/k3s/server/node-token"
+  register: _get_token
+  changed_when: false
+
+- name: Install k3s worker
+  ansible.builtin.shell: "set -e -o pipefail && wget -qO - https://get.k3s.io | K3S_URL=https://192.0.2.11:6443 K3S_TOKEN={{ _get_token.stdout }} sh -"
+  args:
+    warn: false
+    creates: /usr/local/bin/k3s
+    executable: /bin/bash
+  register: _install_k3s_worker
+
+- name: Show output
+  when: debug_output and _install_k3s_worker.changed
+  ansible.builtin.debug:
+    var: _install_k3s_worker.stdout_lines
