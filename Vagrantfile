@@ -2,8 +2,6 @@ def gb(gb_size)
   return gb_size*1024
 end
 
-k3s_release = "v1.27.2%2Bk3s1"
-
 Vagrant.configure("2") do |config|
   config.vm.box = "debian/bullseye64"
   config.vm.box_check_update = false
